@@ -2,33 +2,40 @@ import { useState, useEffect } from "react";
 import BlogList from "./BlogList";
 
 const Home = () => {
-  const [blogs, setBlogs] = useState([
-    { title: "My new website", body: "lorem ipsum...", author: "mario", id: 1 },
-    { title: "Welcome party!", body: "lorem ipsum...", author: "yoshi", id: 2 },
-    { title: "Web dev top tips", body: "lorem ipsum...", author: "mario", id: 3},
-  ]);
+    // initially the value of the state is null until the data is finished fetching on render
+  const [blogs, setBlogs] = useState(null);
+  const [isPending, setIsPending] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [name, setName] = useState('mario');
-
-  const handleDelete = (id) => {
-    const newBlogs = blogs.filter(blog => blog.id !== id);
-    setBlogs(newBlogs);
-    }
-
-    // useful for running code that needs to be run for every render
-    // runs twice here due to React.StrictMode running on App component
-    // pass dependencies (as a state) to useEffect (as an array) when you only want it to run in certain situations. if you only want it to run on the first render, pass an empty array
+    // fetching data from our json server w/ useEffect
     useEffect(() => {
-        console.log('use effect ran');
-        console.log(name);
-    }, [name]);
+        // using setTimeout to simulate longer request to see loading div below
+        setTimeout(() => {
+            fetch("http://localhost:8000/blogs")
+                .then(res => {
+                    if (!res.ok) {
+                        throw Error('could not fetch the data for that resource')
+                    }
+                    return res.json();
+                })
+                .then((data) => {
+                    setBlogs(data);
+                    setIsPending(false);
+                    setError(null);
+                })
+                .catch(err => {
+                    setIsPending(false);
+                    setError(err.message);
+                })
+        }, 1000);
+    }, []);
 
   return (
     <div className="home">
-        {/* blogs prop inline with component */}
-        <BlogList blogs={blogs} title="All Blogs!" handleDelete={handleDelete} />
-        <button onClick={() => setName('luigi')}>Change Name</button>
-        <p>{ name }</p>
+        {/* logical 'and' (&&) evaluates the LH side 1st, and if false, the RH side is never read. below we are conditionally outputting a template */}
+        { error && <div>{ error}</div>}
+        { isPending && <div>Loading...</div> }
+        {blogs && <BlogList blogs={blogs} title="All Blogs!" />}
     </div>
   );
 };
